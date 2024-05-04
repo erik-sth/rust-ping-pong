@@ -7,6 +7,7 @@ const HEIGHT: usize = 600;
 // Define your desired frame rate
 const DESIRED_FPS: f64 = 250.0;
 const FRAME_TIME: f64 = 1.0 / DESIRED_FPS;
+const LIMIT_FPS: bool = false;
 
 //speeds
 const PLAYER_SPEED: f64 = 800.0;
@@ -28,6 +29,7 @@ const RED_COLOR: u32 = 0xFF0000;
 fn main() {
     let mut buffer: Vec<u32> = vec![0; WIDTH * HEIGHT];
     let mut last_frame_time = Instant::now();
+    let frame_time = Duration::from_secs_f64(FRAME_TIME);
     // Variables for player, ball, and bot
     let mut player_y = 200;
     let mut ball_y = 400;
@@ -71,22 +73,28 @@ fn main() {
 
         window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();
 
-        // If frame was rendered too quickly, wait to maintain frame rate
-        let elapsed_frame_time = Instant::now() - last_frame_time;
-        if elapsed_frame_time.as_secs_f64() < FRAME_TIME {
-            let sleep_duration = Duration::from_secs_f64(FRAME_TIME - elapsed_frame_time.as_secs_f64());
-            std::thread::sleep(sleep_duration);
-        }
-
-        last_frame_time = Instant::now();
         let elapsed_frame_time = Instant::now() - last_frame_time;
         let elapsed_seconds = elapsed_frame_time.as_secs_f64();
-
+        
+        // If frame was rendered too quickly, wait to maintain frame rate
         if elapsed_seconds < FRAME_TIME {
             let sleep_duration = Duration::from_secs_f64(FRAME_TIME - elapsed_seconds);
             std::thread::sleep(sleep_duration);
         }
-
+    
+        last_frame_time = Instant::now();
+    
+        // If frame rate limiting is enabled, limit the FPS
+        if LIMIT_FPS {
+            let frame_time_remaining = Instant::now() - last_frame_time;
+            let frame_time_remaining_seconds = frame_time_remaining.as_secs_f64();
+    
+            // If frame was rendered too quickly after the last sleep, wait to maintain frame rate
+            if frame_time_remaining_seconds < FRAME_TIME {
+                let sleep_duration = Duration::from_secs_f64(FRAME_TIME - frame_time_remaining_seconds);
+                std::thread::sleep(sleep_duration);
+            }
+        }    std::thread::sleep(frame_time);
     }
 }
 
